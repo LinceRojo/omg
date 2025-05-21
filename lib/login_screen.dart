@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'registration_screen.dart';
 import 'qr_generator_screen.dart';
 import 'mobile_scanner_screen.dart';
+import 'user_verification_screen.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -110,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Navega a la siguiente pantalla
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()), // Reemplaza HomeScreen() con tu pantalla principal
+            MaterialPageRoute(builder: (context) => UserVerificationScreen(uid:userCredential.user?.uid)), // Reemplaza HomeScreen() con tu pantalla principal
           );
         }
       } on FirebaseAuthException catch (e) {
@@ -208,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MobileScannerScreen(),
+                          builder: (context) => UserVerificationScreen(uid:userCredential.user?.uid),
                           ),
                       );
                     } else {
