@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'registration_screen.dart';
+import 'qr_generator_screen.dart';
+import 'mobile_scanner_screen.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -81,6 +83,8 @@ Future<UserCredential?> signInWithGoogle() async {
 }
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -203,7 +207,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Navega a la siguiente pantalla
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => HomeScreen()), // Reemplaza HomeScreen() con tu pantalla principal
+                        MaterialPageRoute(
+                          builder: (context) => const MobileScannerScreen(),
+                          ),
                       );
                     } else {
                       print("Inicio de sesión con Google fallido.");
@@ -231,6 +237,8 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
