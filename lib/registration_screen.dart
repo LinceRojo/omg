@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'user_verification_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -27,10 +28,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 password: _passwordController.text.trim());
         if (userCredential.user != null) {
           print("Usuario registrado con éxito: ${userCredential.user!.uid}");
+          String user_uid = userCredential.user!.uid;
           // Navega a la pantalla principal o muestra un mensaje de éxito
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()), // Reemplaza HomeScreen()
+            MaterialPageRoute(builder: (context) => UserVerificationScreen(uid:user_uid)),
           );
         }
       } on FirebaseAuthException catch (e) {
@@ -145,22 +147,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Pantalla Principal'),
-      ),
-      body: Center(
-        child: Text('¡Cuenta creada!'),
       ),
     );
   }
