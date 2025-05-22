@@ -45,12 +45,32 @@ class UserInfoScreen extends StatelessWidget {
           final email = userData['email'] as String? ?? 'Email no disponible';
           final niu = userData['niu'] as String? ?? 'NIU no disponible';
           final github = userData['github'] as String? ?? 'Github no disponible';
+          final profileImageUrl = userData['profileImageUrl'] as String?;
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center( // Centra la imagen de perfil
+                  child: SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: ClipOval(
+                      child: profileImageUrl != null && profileImageUrl.isNotEmpty
+                          ? Image.network(
+                              profileImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                print('Error al cargar la imagen: $error');
+                                return const Icon(Icons.account_circle, size: 120); // Muestra un icono en caso de error
+                              },
+                            )
+                          : const Icon(Icons.account_circle, size: 120), // Muestra un icono por defecto si no hay URL
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Text('Nombre: $name', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text('Email: $email'),

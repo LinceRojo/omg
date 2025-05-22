@@ -1,7 +1,11 @@
-// user_update_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:omg/user_verification_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 
 class UserUpdateScreen extends StatefulWidget {
   final String? uid;
@@ -20,6 +24,11 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
   final _githubController = TextEditingController();
   bool _isLoading = false;
   bool _userExists = false;
+  File? _profileImage;
+  Uint8List? _profileImageBytes;
+  String? _profileImageUrl;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -40,6 +49,8 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
           _emailController.text = userDoc.data()?['email'] ?? '';
           _niuController.text = userDoc.data()?['niu'] ?? '';
           _githubController.text = userDoc.data()?['github'] ?? '';
+          _profileImageUrl = userDoc.data()?['profileImageUrl'];
+          print("Loaded Profile Image URL: $_profileImageUrl"); // Log when loading data
         });
       }
     }
@@ -48,22 +59,65 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
     });
   }
 
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _profileImageBytes = bytes;
+        });
+      } else {
+        setState(() {
+          _profileImage = File(image.path);
+        });
+      }
+    }
+  }
+
+  Future<String?> _uploadProfileImage() async {
+    if (_profileImage == null && _profileImageBytes == null) return null;
+
+    final Reference storageRef = FirebaseStorage.instance
+        .ref()
+        .child('users/${widget.uid}/profile.jpg');
+
+    try {
+      if (kIsWeb) {
+        await storageRef.putData(_profileImageBytes!);
+      } else {
+        await storageRef.putFile(_profileImage!);
+      }
+      final String downloadURL = await storageRef.getDownloadURL();
+      print("Uploaded Profile Image URL: $downloadURL"); // Log after upload
+      return downloadURL;
+    } catch (e) {
+      print('Error al subir la imagen: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al subir la foto de perfil.')),
+      );
+      return null;
+    }
+  }
+
   Future<void> _createUser() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
+      final profileImageUrl = await _uploadProfileImage();
       try {
         await FirebaseFirestore.instance.collection('users').doc(widget.uid).set({
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'niu': _niuController.text.trim(),
           'github': _githubController.text.trim(),
+          'profileImageUrl': profileImageUrl,
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cuenta creada exitosamente.')),
         );
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserVerificationScreen(uid:widget.uid)));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserVerificationScreen(uid: widget.uid)));
       } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al crear la cuenta: $error')),
@@ -81,17 +135,19 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
       setState(() {
         _isLoading = true;
       });
+      final profileImageUrl = await _uploadProfileImage() ?? _profileImageUrl;
       try {
         await FirebaseFirestore.instance.collection('users').doc(widget.uid).update({
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'niu': _niuController.text.trim(),
           'github': _githubController.text.trim(),
+          'profileImageUrl': profileImageUrl,
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Usuario actualizado exitosamente.')),
         );
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserVerificationScreen(uid:widget.uid)));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserVerificationScreen(uid: widget.uid)));
       } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar el usuario: $error')),
@@ -119,6 +175,35 @@ class _UserUpdateScreenState extends State<UserUpdateScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
+                    Align(
+                      alignment: Alignment.center, // O el centro, etc.
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: ClipOval(
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: kIsWeb
+                                    ? _profileImageBytes != null
+                                        ? MemoryImage(_profileImageBytes!)
+                                        : _profileImageUrl != null
+                                            ? NetworkImage(_profileImageUrl!)
+                                            : const AssetImage('default_profile.png')
+                                    : _profileImage != null
+                                        ? FileImage(_profileImage!)
+                                        : _profileImageUrl != null
+                                            ? NetworkImage(_profileImageUrl!)
+                                            : const AssetImage('default_profile.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
