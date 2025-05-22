@@ -94,6 +94,7 @@ class HomeScreen extends StatelessWidget {
                     final groupWithId = groupsWithId[index];
                     final groupId = groupWithId['id'] as String?;
                     final groupData = groupWithId['data'] as Map<String, dynamic>? ?? {};
+                    final String? groupImageUrl = groupData['imageUrl'] as String?;
 
                     return Card(
                       margin: const EdgeInsets.all(8.0),
@@ -110,18 +111,44 @@ class HomeScreen extends StatelessWidget {
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                groupData['Name'] as String? ?? 'Nombre Desconocido',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                              SizedBox(
+                                width: 80,
+                                height: 60,
+                                child: groupImageUrl != null && groupImageUrl.isNotEmpty
+                                    ? Image.network(
+                                        groupImageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          print('Error al cargar la imagen del grupo: $error');
+                                          return const Icon(Icons.image_outlined, size: 40);
+                                        },
+                                      )
+                                    : const Icon(Icons.image_outlined, size: 40),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      groupData['Name'] as String? ?? 'Nombre Desconocido',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      groupData['Description'] as String? ?? 'Descripción Desconocida',
+                                      style: const TextStyle(fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(groupData['Description'] as String? ?? 'Descripción Desconocida'),
                             ],
                           ),
                         ),
