@@ -3,6 +3,7 @@ import 'qr_generator_screen.dart';
 import 'user_info_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'edit_group_screen.dart';
+import 'gemini_chatbot_screen.dart';
 
 class GroupInfoScreen extends StatelessWidget {
   final String? groupId;
@@ -129,6 +130,26 @@ class GroupInfoScreen extends StatelessWidget {
                   }
                 },
                 child: const Text('Mostrar QR'),
+              ),
+            ),
+            const SizedBox(height: 20), // Espacio adicional antes del nuevo botón
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (groupId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GeminiChatbotScreen(groupId: groupId!,),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Error: No se pudo obtener el ID del grupo para el chatbot.')),
+                    );
+                  }
+                },
+                child: const Text('Chatbot del Grupo'),
               ),
             ),
           ],

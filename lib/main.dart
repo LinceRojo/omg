@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 
+const apiKey = 'AIzaSyAs-nSGmbJBftK4wLMTJwIPDIXlDsu1ZXQ'; 
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que los plugins de Flutter estén inicializados
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  Gemini.init(apiKey: apiKey);
   runApp(const MyApp());
 }
 
