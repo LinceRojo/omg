@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              Image.asset('logo.png', height: 100),
+              Image.asset('./assets/logo.png', height: 100),
               const SizedBox(height: 16),
               FadeTransition(
                 opacity: _fadeAnimation,

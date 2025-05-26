@@ -45,12 +45,11 @@ class GroupInfoScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) => EditGroupScreen(
-                            groupId: groupId,
-                            groupData: group,
-                            uid: ownerId,
-                          ),
+                      builder: (context) => EditGroupScreen(
+                        groupId: groupId,
+                        groupData: group,
+                        uid: ownerId,
+                      ),
                     ),
                   );
                 } else {
@@ -78,22 +77,20 @@ class GroupInfoScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.grey.shade200,
-                  image:
-                      groupImageUrl != null && groupImageUrl.isNotEmpty
-                          ? DecorationImage(
-                            image: NetworkImage(groupImageUrl),
-                            fit: BoxFit.cover,
-                          )
-                          : null,
-                ),
-                child:
-                    groupImageUrl == null || groupImageUrl.isEmpty
-                        ? const Icon(
-                          Icons.image_outlined,
-                          size: 60,
-                          color: Colors.grey,
+                  image: groupImageUrl != null && groupImageUrl.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(groupImageUrl),
+                          fit: BoxFit.cover,
                         )
-                        : null,
+                      : null,
+                ),
+                child: groupImageUrl == null || groupImageUrl.isEmpty
+                    ? const Icon(
+                        Icons.image_outlined,
+                        size: 60,
+                        color: Colors.grey,
+                      )
+                    : null,
               ),
             ),
             const SizedBox(height: 24),
@@ -118,11 +115,10 @@ class GroupInfoScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final userId = usersInGroupIds[index];
                   return FutureBuilder<DocumentSnapshot>(
-                    future:
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(userId)
-                            .get(),
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .get(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const ListTile(title: Text('Cargando...'));
@@ -142,9 +138,20 @@ class GroupInfoScreen extends StatelessWidget {
                       final name =
                           userData['name'] as String? ?? 'Nombre no disponible';
                       final niu = userData['niu'] as String? ?? '';
+                      final profileImageUrl =
+                          userData['profileImageUrl'] as String?;
 
                       return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.person)),
+                        leading: CircleAvatar(
+                          backgroundImage: profileImageUrl != null &&
+                                  profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : null,
+                          child: profileImageUrl == null ||
+                                  profileImageUrl.isEmpty
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
                         title: Text(
                           name,
                           style: const TextStyle(color: Colors.black87),
@@ -154,11 +161,10 @@ class GroupInfoScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder:
-                                  (context) => UserInfoScreen(
-                                    userId: userId,
-                                    currentUserId: uid,
-                                  ),
+                              builder: (context) => UserInfoScreen(
+                                userId: userId,
+                                currentUserId: uid,
+                              ),
                             ),
                           );
                         },
@@ -185,8 +191,8 @@ class GroupInfoScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (context) => QRGeneratorScreen(data: groupId!),
+                            builder: (context) =>
+                                QRGeneratorScreen(data: groupId!),
                           ),
                         );
                       } else {
@@ -219,9 +225,8 @@ class GroupInfoScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (context) =>
-                                    GeminiChatbotScreen(groupId: groupId!),
+                            builder: (context) =>
+                                GeminiChatbotScreen(groupId: groupId!),
                           ),
                         );
                       } else {

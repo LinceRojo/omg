@@ -177,7 +177,7 @@ class _UserUpdateScreenState extends State<UserUpdateScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      Image.asset('logo.png', height: 100),
+                      Image.asset('./assets/logo.png', height: 100),
                       const SizedBox(height: 16),
                       TweenAnimationBuilder(
                         tween: Tween<Offset>(
@@ -224,7 +224,7 @@ class _UserUpdateScreenState extends State<UserUpdateScreen>
                                                           _profileImageUrl!,
                                                         )
                                                         : const AssetImage(
-                                                              'default_profile.png',
+                                                              './assets/default_profile.png',
                                                             )
                                                             as ImageProvider)
                                                 : _profileImage != null
@@ -234,7 +234,7 @@ class _UserUpdateScreenState extends State<UserUpdateScreen>
                                                       _profileImageUrl!,
                                                     )
                                                     : const AssetImage(
-                                                          'default_profile.png',
+                                                          './assets/default_profile.png',
                                                         )
                                                         as ImageProvider),
                                       ),

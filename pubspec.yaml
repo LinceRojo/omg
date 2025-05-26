@@ -92,6 +92,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-
-assets:
-  - assets/
+  assets:
+    - assets/default_profile.png
+    - assets/logo.png
+    - assets/logo.JPG
