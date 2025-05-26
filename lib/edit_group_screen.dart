@@ -12,7 +12,12 @@ class EditGroupScreen extends StatefulWidget {
   final Map<String, dynamic> groupData;
   final String? uid;
 
-  const EditGroupScreen({super.key, required this.groupId, required this.groupData, this.uid});
+  const EditGroupScreen({
+    super.key,
+    required this.groupId,
+    required this.groupData,
+    this.uid,
+  });
 
   @override
   State<EditGroupScreen> createState() => _EditGroupScreenState();
@@ -31,8 +36,12 @@ class _EditGroupScreenState extends State<EditGroupScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.groupData['Name'] as String? ?? '');
-    _descriptionController = TextEditingController(text: widget.groupData['Description'] as String? ?? '');
+    _nameController = TextEditingController(
+      text: widget.groupData['Name'] as String? ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.groupData['Description'] as String? ?? '',
+    );
     _currentImageUrl = widget.groupData['imageUrl'] as String?;
   }
 
@@ -57,9 +66,9 @@ class _EditGroupScreenState extends State<EditGroupScreen> {
   Future<String?> _uploadGroupImage(String groupId) async {
     if (_groupImage == null && _groupImageBytes == null) return null;
 
-    final Reference storageRef = FirebaseStorage.instance
-        .ref()
-        .child('groups/$groupId/image.jpg');
+    final Reference storageRef = FirebaseStorage.instance.ref().child(
+      'groups/$groupId/image.jpg',
+    );
 
     try {
       if (kIsWeb) {
@@ -67,11 +76,8 @@ class _EditGroupScreenState extends State<EditGroupScreen> {
       } else {
         await storageRef.putFile(_groupImage!);
       }
-      final String downloadURL = await storageRef.getDownloadURL();
-      print("Uploaded Group Image URL: $downloadURL");
-      return downloadURL;
+      return await storageRef.getDownloadURL();
     } catch (e) {
-      print('Error al subir la imagen del grupo: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al subir la foto del grupo.')),
       );
@@ -81,139 +87,149 @@ class _EditGroupScreenState extends State<EditGroupScreen> {
 
   Future<void> _updateGroup() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
       try {
         String? newImageUrl = _currentImageUrl;
         if (_groupImage != null || _groupImageBytes != null) {
           newImageUrl = await _uploadGroupImage(widget.groupId!);
         }
 
-        await FirebaseFirestore.instance.collection('groups').doc(widget.groupId).update({
-          'Name': _nameController.text.trim(),
-          'Description': _descriptionController.text.trim(),
-          if (newImageUrl != null) 'imageUrl': newImageUrl,
-        });
+        await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(widget.groupId)
+            .update({
+              'Name': _nameController.text.trim(),
+              'Description': _descriptionController.text.trim(),
+              if (newImageUrl != null) 'imageUrl': newImageUrl,
+            });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Grupo actualizado exitosamente.')),
         );
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(uid: widget.uid,),
-          ),
-        ); // Volver a la pantalla de información del grupo
+          MaterialPageRoute(builder: (context) => HomeScreen(uid: widget.uid)),
+        );
       } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar el grupo: $error')),
         );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   Widget _buildImagePreview() {
     if (_groupImage != null) {
-      return Image.file(
-        _groupImage!,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-      );
+      return Image.file(_groupImage!, fit: BoxFit.cover);
     } else if (_groupImageBytes != null) {
-      return Image.memory(
-        _groupImageBytes!,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-      );
+      return Image.memory(_groupImageBytes!, fit: BoxFit.cover);
     } else if (_currentImageUrl != null && _currentImageUrl!.isNotEmpty) {
       return Image.network(
         _currentImageUrl!,
-        width: 100,
-        height: 100,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('Error al cargar la imagen actual: $error');
-          return const Icon(Icons.image_outlined, size: 100);
+          return const Icon(Icons.image_outlined, size: 60);
         },
       );
     } else {
-      return const SizedBox(
-        width: 100,
-        height: 100,
-        child: Icon(Icons.image_outlined),
-      );
+      return const Icon(Icons.image_outlined, size: 60);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFFD32F2F);
+    const borderRadius = BorderRadius.all(Radius.circular(16));
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
-        title: const Text('Editar Grupo'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
+        title: const Text(
+          'Editar Grupo',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
                       GestureDetector(
                         onTap: _pickImage,
                         child: Container(
-                          width: 100,
+                          width: 140,
                           height: 100,
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Center(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
                             child: _buildImagePreview(),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Nombre del Grupo',
-                          border: OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.group),
+                          border: OutlineInputBorder(
+                            borderRadius: borderRadius,
+                          ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, introduce el nombre del grupo.';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                value == null || value.isEmpty
+                                    ? 'Por favor, introduce el nombre del grupo.'
+                                    : null,
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Descripción del Grupo',
-                          border: OutlineInputBorder(),
-                        ),
                         maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Descripción del Grupo',
+                          prefixIcon: const Icon(Icons.description),
+                          border: OutlineInputBorder(
+                            borderRadius: borderRadius,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 25),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _updateGroup,
-                        child: const Text('Guardar Cambios', style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save, color: Colors.white),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: borderRadius,
+                            ),
+                          ),
+                          onPressed: _updateGroup,
+                          label: const Text(
+                            'Guardar Cambios',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
     );
   }
 }

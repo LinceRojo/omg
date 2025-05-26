@@ -4,17 +4,27 @@ import 'user_update_screen.dart';
 
 class UserInfoScreen extends StatelessWidget {
   final String userId;
-  final String? currentUserId; // Nuevo parámetro para el ID del usuario actual
+  final String? currentUserId;
 
   const UserInfoScreen({super.key, required this.userId, this.currentUserId});
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFFD32F2F);
+    const borderRadius = BorderRadius.all(Radius.circular(16));
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
-        title: const Text('Información del Usuario'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
+        title: const Text(
+          'Información del Usuario',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          if (userId == currentUserId) // Mostrar botón solo si es el perfil del usuario actual
+          if (userId == currentUserId)
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
@@ -29,7 +39,8 @@ class UserInfoScreen extends StatelessWidget {
         ],
       ),
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+        future:
+            FirebaseFirestore.instance.collection('users').doc(userId).get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -44,40 +55,116 @@ class UserInfoScreen extends StatelessWidget {
           final name = userData['name'] as String? ?? 'Nombre no disponible';
           final email = userData['email'] as String? ?? 'Email no disponible';
           final niu = userData['niu'] as String? ?? 'NIU no disponible';
-          final github = userData['github'] as String? ?? 'Github no disponible';
+          final github =
+              userData['github'] as String? ?? 'Github no disponible';
           final profileImageUrl = userData['profileImageUrl'] as String?;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Center( // Centra la imagen de perfil
-                  child: SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: ClipOval(
-                      child: profileImageUrl != null && profileImageUrl.isNotEmpty
-                          ? Image.network(
-                              profileImageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                print('Error al cargar la imagen: $error');
-                                return const Icon(Icons.account_circle, size: 120); // Muestra un icono en caso de error
-                              },
+                Center(
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey.shade200,
+                    backgroundImage:
+                        (profileImageUrl != null && profileImageUrl.isNotEmpty)
+                            ? NetworkImage(profileImageUrl)
+                            : null,
+                    child:
+                        (profileImageUrl == null || profileImageUrl.isEmpty)
+                            ? const Icon(
+                              Icons.account_circle,
+                              size: 60,
+                              color: Colors.grey,
                             )
-                          : const Icon(Icons.account_circle, size: 120), // Muestra un icono por defecto si no hay URL
-                    ),
+                            : null,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text('Nombre: $name', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('Email: $email'),
-                const SizedBox(height: 8),
-                Text('NIU: $niu'),
-                const SizedBox(height: 8),
-                Text('Github: $github'),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: borderRadius,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nombre:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      Text(
+                        'Email:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      Text(
+                        'NIU:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        niu,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      Text(
+                        'Github:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        github,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_gemini/flutter_gemini.dart'; // Importa la librería flutter_gemini
-import 'dart:developer'; // Import para la función log
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'dart:developer';
 
 class GeminiChatbotScreen extends StatefulWidget {
   final String groupId;
@@ -18,26 +18,32 @@ class _GeminiChatbotScreenState extends State<GeminiChatbotScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
-  final Gemini _gemini = Gemini.instance; // Obtiene la instancia de Gemini
+  final Gemini _gemini = Gemini.instance;
 
   Future<Map<String, dynamic>?> _getGroupData() async {
     try {
-      DocumentSnapshot<Map<String, dynamic>> snapshot =
-          await FirebaseFirestore.instance.collection('groups').doc(widget.groupId).get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(widget.groupId)
+              .get();
       return snapshot.data();
     } catch (e) {
-      print('Error al obtener datos del grupo: $e');
+      log('Error al obtener datos del grupo: $e');
       return null;
     }
   }
 
   Future<Map<String, dynamic>?> _getUserData(String userId) async {
     try {
-      DocumentSnapshot<Map<String, dynamic>> snapshot =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
       return snapshot.data();
     } catch (e) {
-      print('Error al obtener datos del usuario $userId: $e');
+      log('Error al obtener datos del usuario: $e');
       return null;
     }
   }
@@ -47,10 +53,10 @@ class _GeminiChatbotScreenState extends State<GeminiChatbotScreen> {
     String context = '';
 
     if (groupData != null) {
-      final groupName = groupData['Name'] as String? ?? 'Este grupo';
-      final groupDescription = groupData['Description'] as String? ?? 'este grupo';
-      final List<dynamic> userIds = groupData['Users'] as List<dynamic>? ?? [];
-      List<Map<String, dynamic>> usersInfo = [];
+      final groupName = groupData['Name'] ?? 'Este grupo';
+      final groupDescription = groupData['Description'] ?? 'este grupo';
+      final userIds = groupData['Users'] as List<dynamic>? ?? [];
+      final usersInfo = <Map<String, dynamic>>[];
 
       for (final userId in userIds) {
         final userData = await _getUserData(userId);
@@ -64,23 +70,16 @@ class _GeminiChatbotScreenState extends State<GeminiChatbotScreen> {
         }
       }
 
-      context = '''Eres un asistente útil que proporciona información relevante sobre el grupo "${groupName}".
-      La descripción del grupo es: "${groupDescription}".
-      Los miembros del grupo son: ${usersInfo.map((user) => user['name']).join(', ')}.
-      Aquí tienes información detallada de los miembros:
-      ${usersInfo.map((user) => '- Nombre: ${user['name']}, Email: ${user['email']}, GitHub: ${user['github'] ?? 'No disponible'}, NIU: ${user['niu'] ?? 'No disponible'}').join('\n')}
-
-      Historial de conversación:\n${_messages.map((msg) => '${msg.isUser ? 'Usuario' : 'Asistente'}: ${msg.text}').join('\n')}
-      ''';
+      context =
+          '''Eres un asistente útil que proporciona información relevante sobre el grupo "$groupName".
+Descripción: "$groupDescription".
+Miembros: ${usersInfo.map((u) => u['name']).join(', ')}.
+Detalles:
+${usersInfo.map((u) => '- ${u['name']} (${u['email']}, GitHub: ${u['github'] ?? 'N/A'}, NIU: ${u['niu'] ?? 'N/A'})').join('\n')}
+''';
     }
 
-    final List<Part> promptParts = [];
-    if (context.isNotEmpty) {
-      promptParts.add(Part.text(context));
-    }
-    promptParts.add(Part.text('Usuario: $userQuery'));
-
-    return promptParts;
+    return [Part.text(context), Part.text('Usuario: $userQuery')];
   }
 
   void _sendMessage(String text) async {
@@ -91,79 +90,87 @@ class _GeminiChatbotScreenState extends State<GeminiChatbotScreen> {
     });
     _textController.clear();
 
-    final promptParts = await _buildPromptParts(text);
+    final parts = await _buildPromptParts(text);
 
     try {
-      final response = await _gemini.prompt(parts: promptParts);
-      if (response != null && response.output != null) {
-        setState(() {
-          _messages.add(ChatMessage(text: response.output!, isUser: false));
-        });
-      } else {
-        setState(() {
-          _messages.add(ChatMessage(text: 'Error al obtener respuesta del chatbot o respuesta vacía.', isUser: false));
-        });
-      }
+      final response = await _gemini.prompt(parts: parts);
+      final output = response?.output ?? 'Sin respuesta del chatbot.';
+      setState(() => _messages.add(ChatMessage(text: output, isUser: false)));
     } catch (e) {
-      log('Error al enviar mensaje a Gemini', error: e, name: 'Gemini Error');
-      setState(() {
-        _messages.add(ChatMessage(text: 'Error: $e', isUser: false));
-      });
+      setState(
+        () => _messages.add(ChatMessage(text: 'Error: $e', isUser: false)),
+      );
     } finally {
-      setState(() {
-        _isLoading = false;
+      setState(() => _isLoading = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       });
     }
-
-    // Desplazar al final después de que el mensaje se haya añadido
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text('Chatbot del Grupo'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 1,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
+              padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ChatBubble(
-                  text: message.text,
-                  isUser: message.isUser,
+                final msg = _messages[index];
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: ChatBubble(text: msg.text, isUser: msg.isUser),
                 );
               },
             ),
           ),
-          _isLoading ? const LinearProgressIndicator() : const SizedBox.shrink(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+          Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.white,
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _textController,
-                    decoration: const InputDecoration(
-                      hintText: 'Escribe tu mensaje...',
+                    decoration: InputDecoration(
+                      hintText: 'Escribe un mensaje...',
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                     onSubmitted: _sendMessage,
                   ),
                 ),
-                const SizedBox(width: 8.0),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () => _sendMessage(_textController.text),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Colors.black87,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: () => _sendMessage(_textController.text),
+                  ),
                 ),
               ],
             ),
@@ -177,7 +184,6 @@ class _GeminiChatbotScreenState extends State<GeminiChatbotScreen> {
 class ChatMessage {
   final String text;
   final bool isUser;
-
   ChatMessage({required this.text, required this.isUser});
 }
 
@@ -189,20 +195,32 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isUser ? Alignment.topRight : Alignment.topLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-        padding: const EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-          color: isUser ? Colors.blue[200] : Colors.grey[300],
-          borderRadius: BorderRadius.circular(8.0),
+    final bgColor = isUser ? Colors.redAccent : Colors.grey.shade300;
+    final textColor = isUser ? Colors.white : Colors.black;
+    final align = isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final radius =
+        isUser
+            ? const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+            )
+            : const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            );
+
+    return Column(
+      crossAxisAlignment: align,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: bgColor, borderRadius: radius),
+          child: Text(text, style: TextStyle(color: textColor, fontSize: 15)),
         ),
-        child: Text(
-          text,
-          style: TextStyle(color: isUser ? Colors.white : Colors.black),
-        ),
-      ),
+      ],
     );
   }
 }

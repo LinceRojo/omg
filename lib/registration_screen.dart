@@ -6,37 +6,67 @@ class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _RegistrationScreenState extends State<RegistrationScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registerWithEmailAndPassword() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
       try {
-        UserCredential userCredential = await FirebaseAuth.instance
+        final userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
-                email: _emailController.text.trim(),
-                password: _passwordController.text.trim());
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
         if (userCredential.user != null) {
-          print("Usuario registrado con éxito: ${userCredential.user!.uid}");
-          String user_uid = userCredential.user!.uid;
-          // Navega a la pantalla principal o muestra un mensaje de éxito
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => UserVerificationScreen(uid:user_uid)),
+            MaterialPageRoute(
+              builder:
+                  (_) => UserVerificationScreen(uid: userCredential.user!.uid),
+            ),
           );
         }
       } on FirebaseAuthException catch (e) {
-        print("Error al registrar usuario: ${e.message}");
         String errorMessage = 'Error al registrar usuario.';
         if (e.code == 'email-already-in-use') {
           errorMessage = 'Este correo electrónico ya está en uso.';
@@ -45,106 +75,175 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         } else if (e.code == 'weak-password') {
           errorMessage = 'La contraseña es demasiado débil.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.isEmpty)
       return 'Por favor, introduce una contraseña.';
-    }
-    if (value.length < 6) {
+    if (value.length < 6)
       return 'La contraseña debe tener al menos 6 caracteres.';
-    }
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
-    if (value != _passwordController.text) {
+    if (value != _passwordController.text)
       return 'Las contraseñas no coinciden.';
-    }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFFD32F2F);
+    const borderRadius = BorderRadius.all(Radius.circular(16));
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Registro'),
-      ),
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'Crea una cuenta',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 20),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Correo Electrónico',
-                    border: OutlineInputBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Image.asset('logo.png', height: 100),
+              const SizedBox(height: 16),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Card(
+                    shape: RoundedRectangleBorder(borderRadius: borderRadius),
+                    elevation: 8,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Crear una cuenta',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            TextFormField(
+                              controller: _emailController,
+                              decoration: InputDecoration(
+                                labelText: 'Correo electrónico',
+                                prefixIcon: Icon(
+                                  Icons.email,
+                                  color: primaryColor,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: borderRadius,
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Por favor, introduce tu correo electrónico.';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Por favor, introduce un correo válido.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                labelText: 'Contraseña',
+                                prefixIcon: Icon(
+                                  Icons.lock,
+                                  color: primaryColor,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: borderRadius,
+                                ),
+                              ),
+                              validator: _validatePassword,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                labelText: 'Confirmar contraseña',
+                                prefixIcon: Icon(
+                                  Icons.lock_outline,
+                                  color: primaryColor,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: borderRadius,
+                                ),
+                              ),
+                              validator: _validateConfirmPassword,
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(
+                                  Icons.person_add,
+                                  color: Colors.white,
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: borderRadius,
+                                  ),
+                                ),
+                                onPressed:
+                                    _isLoading
+                                        ? null
+                                        : _registerWithEmailAndPassword,
+                                label:
+                                    _isLoading
+                                        ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Text(
+                                          'Registrarse',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back),
+                              label: const Text(
+                                '¿Ya tienes una cuenta? Inicia sesión',
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, introduce tu correo electrónico.';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Por favor, introduce un correo electrónico válido.';
-                    }
-                    return null;
-                  },
                 ),
-                SizedBox(height: 10),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: _validatePassword,
-                ),
-                SizedBox(height: 10),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Confirmar Contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: _validateConfirmPassword,
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _registerWithEmailAndPassword,
-                  child: _isLoading
-                      ? CircularProgressIndicator()
-                      : Text('Registrarse'),
-                ),
-                SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Volver a la pantalla de inicio de sesión
-                  },
-                  child: Text('¿Ya tienes una cuenta? Inicia sesión'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

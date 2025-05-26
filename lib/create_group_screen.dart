@@ -30,13 +30,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     if (image != null) {
       if (kIsWeb) {
         final bytes = await image.readAsBytes();
-        setState(() {
-          _groupImageBytes = bytes;
-        });
+        setState(() => _groupImageBytes = bytes);
       } else {
-        setState(() {
-          _groupImage = File(image.path);
-        });
+        setState(() => _groupImage = File(image.path));
       }
     }
   }
@@ -44,9 +40,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   Future<String?> _uploadGroupImage(String groupId) async {
     if (_groupImage == null && _groupImageBytes == null) return null;
 
-    final Reference storageRef = FirebaseStorage.instance
-        .ref()
-        .child('groups/$groupId/image.jpg');
+    final storageRef = FirebaseStorage.instance.ref().child(
+      'groups/$groupId/image.jpg',
+    );
 
     try {
       if (kIsWeb) {
@@ -54,11 +50,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       } else {
         await storageRef.putFile(_groupImage!);
       }
-      final String downloadURL = await storageRef.getDownloadURL();
-      print("Uploaded Group Image URL: $downloadURL");
-      return downloadURL;
+      return await storageRef.getDownloadURL();
     } catch (e) {
-      print('Error al subir la imagen del grupo: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al subir la foto del grupo.')),
       );
@@ -68,21 +61,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   Future<void> _createGroup() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
       try {
-        final groupRef = await FirebaseFirestore.instance.collection('groups').add({
-          'Name': _nameController.text.trim(),
-          'Description': _descriptionController.text.trim(),
-          'Users': [widget.ownerId],
-          'Owner': widget.ownerId,
-          'imageUrl': null, // Inicialmente sin imagen
-        });
+        final groupRef = await FirebaseFirestore.instance
+            .collection('groups')
+            .add({
+              'Name': _nameController.text.trim(),
+              'Description': _descriptionController.text.trim(),
+              'Users': [widget.ownerId],
+              'Owner': widget.ownerId,
+              'imageUrl': null,
+            });
 
-        final groupId = groupRef.id;
-        final imageUrl = await _uploadGroupImage(groupId);
-
+        final imageUrl = await _uploadGroupImage(groupRef.id);
         if (imageUrl != null) {
           await groupRef.update({'imageUrl': imageUrl});
         }
@@ -96,102 +87,118 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             builder: (context) => HomeScreen(uid: widget.ownerId),
           ),
         );
-      } catch (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear el grupo: $error')),
-        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al crear el grupo: $e')));
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
   Widget _buildGroupImagePreview() {
     if (_groupImage != null) {
-      return Image.file(
-        _groupImage!,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-      );
+      return Image.file(_groupImage!, fit: BoxFit.cover);
     } else if (_groupImageBytes != null) {
-      return Image.memory(
-        _groupImageBytes!,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-      );
+      return Image.memory(_groupImageBytes!, fit: BoxFit.cover);
     } else {
-      return const SizedBox(
-        width: 100,
-        height: 100,
-        child: Icon(Icons.image_outlined),
-      );
+      return const Icon(Icons.image_outlined, size: 60);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    const primaryColor = Color(0xFFD32F2F);
+    const borderRadius = BorderRadius.all(Radius.circular(16));
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text('Crear Nuevo Grupo'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 1,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 140,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Center(child: _buildGroupImagePreview()),
+                          ),
                         ),
-                        child: Center(
-                          child: _buildGroupImagePreview(),
+                      ),
+                      const SizedBox(height: 24),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Nombre del Grupo',
+                          prefixIcon: const Icon(Icons.group),
+                          border: OutlineInputBorder(
+                            borderRadius: borderRadius,
+                          ),
+                        ),
+                        validator:
+                            (value) =>
+                                value == null || value.isEmpty
+                                    ? 'Introduce un nombre.'
+                                    : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _descriptionController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Descripción del Grupo',
+                          prefixIcon: const Icon(Icons.description),
+                          border: OutlineInputBorder(
+                            borderRadius: borderRadius,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del Grupo',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.white,
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: borderRadius,
+                            ),
+                          ),
+                          onPressed: _createGroup,
+                          label: const Text(
+                            'Crear Grupo',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor, introduce el nombre del grupo.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 15),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Descripción del Grupo',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 25),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _createGroup,
-                      child: const Text('Crear Grupo', style: TextStyle(fontSize: 16)),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
     );
   }
 }
